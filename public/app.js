@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  const apiBase = "/api";
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -17,7 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
 
       try {
-        const res = await fetch("/.netlify/functions/register", {
+        const res = await fetch(`${apiBase}/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
@@ -42,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
 
       try {
-        const res = await fetch("/.netlify/functions/login", {
+        const res = await fetch(`${apiBase}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
@@ -67,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
       try {
-        await fetch("/.netlify/functions/logout", { method: "POST" });
+        await fetch(`${apiBase}/logout`, { method: "POST" });
       } finally {
         window.location.href = "/login.html";
       }
@@ -76,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (welcome) {
     try {
-      const res = await fetch("/.netlify/functions/me");
+      const res = await fetch(`${apiBase}/me`);
       const data = await res.json();
 
       if (data.success && data.user) {

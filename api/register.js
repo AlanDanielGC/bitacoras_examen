@@ -1,27 +1,24 @@
-const pool = require("./_db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const pool = require("./_db");
+const { getJsonBody, sendJson } = require("./_http");
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ success: false, error: "Método no permitido" })
-    };
+module.exports = async (req, res) => {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { success: false, error: "Método no permitido" });
+    return;
   }
 
   try {
-    const body = JSON.parse(event.body || "{}");
+    const body = await getJsonBody(req);
     const { name, email, password, role } = body;
 
     if (!name || !email || !password || !role) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          error: "Faltan campos obligatorios"
-        })
-      };
+      sendJson(res, 400, {
+        success: false,
+        error: "Faltan campos obligatorios"
+      });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -55,28 +52,24 @@ exports.handler = async (event) => {
       { expiresIn: "1d" }
     );
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      })
-    };
+    sendJson(res, 200, {
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
 
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        success: false,
-        error: error.message
-      })
-    };
+    const statusCode = error.message === "Invalid JSON body" ? 400 : 500;
+
+    sendJson(res, statusCode, {
+      success: false,
+      error: error.message
+    });
   }
 };
