@@ -10,6 +10,16 @@ exports.handler = async (event) => {
   try {
     const { email, password } = JSON.parse(event.body);
 
+    if (!email || !password) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "Faltan credenciales."
+        })
+      };
+    }
+
     const result = await pool.query(
       `SELECT id, name, email, password_hash, role
        FROM users
@@ -23,12 +33,20 @@ exports.handler = async (event) => {
       await pool.query(
         `INSERT INTO logs (user_id, event_type, description, ip_address, user_agent)
          VALUES ($1, 'login_failed', $2, $3, $4)`,
-        [null, `Intento de acceso fallido con email: ${email}`, event.headers["x-nf-client-connection-ip"] || null, event.headers["user-agent"] || null]
+        [
+          null,
+          `Intento de acceso fallido con email: ${email}`,
+          event.headers["x-nf-client-connection-ip"] || null,
+          event.headers["user-agent"] || null
+        ]
       );
 
       return {
         statusCode: 401,
-        body: JSON.stringify({ success: false, message: "Credenciales inválidas." })
+        body: JSON.stringify({
+          success: false,
+          message: "Credenciales inválidas."
+        })
       };
     }
 
@@ -38,12 +56,20 @@ exports.handler = async (event) => {
       await pool.query(
         `INSERT INTO logs (user_id, event_type, description, ip_address, user_agent)
          VALUES ($1, 'login_failed', $2, $3, $4)`,
-        [user.id, `Contraseña incorrecta para: ${email}`, event.headers["x-nf-client-connection-ip"] || null, event.headers["user-agent"] || null]
+        [
+          user.id,
+          `Contraseña incorrecta para: ${email}`,
+          event.headers["x-nf-client-connection-ip"] || null,
+          event.headers["user-agent"] || null
+        ]
       );
 
       return {
         statusCode: 401,
-        body: JSON.stringify({ success: false, message: "Credenciales inválidas." })
+        body: JSON.stringify({
+          success: false,
+          message: "Credenciales inválidas."
+        })
       };
     }
 
@@ -74,7 +100,8 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        "Set-Cookie": `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`
+        "Set-Cookie": `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         success: true,

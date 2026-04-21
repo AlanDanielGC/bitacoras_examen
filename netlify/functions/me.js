@@ -9,7 +9,10 @@ exports.handler = async (event) => {
     if (!match) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ success: false, message: "No autenticado." })
+        body: JSON.stringify({
+          success: false,
+          message: "No autenticado."
+        })
       };
     }
 
@@ -24,7 +27,10 @@ exports.handler = async (event) => {
     if (!result.rows.length) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ success: false, message: "Usuario no encontrado." })
+        body: JSON.stringify({
+          success: false,
+          message: "Usuario no encontrado."
+        })
       };
     }
 

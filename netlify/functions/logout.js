@@ -34,9 +34,13 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        "Set-Cookie": "session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"
+        "Set-Cookie": "session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ success: true, message: "Sesión cerrada." })
+      body: JSON.stringify({
+        success: true,
+        message: "Sesión cerrada."
+      })
     };
   } catch (error) {
     return {

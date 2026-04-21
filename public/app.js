@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (registerForm) {
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+
       const data = {
         name: document.getElementById("name").value,
         email: document.getElementById("email").value,
@@ -15,58 +16,75 @@ document.addEventListener("DOMContentLoaded", async () => {
         role: document.getElementById("role").value
       };
 
-      const res = await fetch("/.netlify/functions/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      try {
+        const res = await fetch("/.netlify/functions/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-      const result = await res.json();
-      if (message) message.textContent = result.message;
+        const result = await res.json();
+        if (message) message.textContent = result.message || "Respuesta recibida.";
+
+      } catch (error) {
+        if (message) message.textContent = "Error de red al registrar usuario.";
+      }
     });
   }
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+
       const data = {
         email: document.getElementById("email").value,
         password: document.getElementById("password").value
       };
 
-      const res = await fetch("/.netlify/functions/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      try {
+        const res = await fetch("/.netlify/functions/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-      const result = await res.json();
-      if (message) message.textContent = result.message;
+        const result = await res.json();
+        if (message) message.textContent = result.message || "Respuesta recibida.";
 
-      if (result.success) {
-        if (result.role === "admin") {
-          window.location.href = "/admin.html";
-        } else {
-          window.location.href = "/user.html";
+        if (result.success) {
+          if (result.role === "admin") {
+            window.location.href = "/admin.html";
+          } else {
+            window.location.href = "/user.html";
+          }
         }
+      } catch (error) {
+        if (message) message.textContent = "Error de red al iniciar sesión.";
       }
     });
   }
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
-      await fetch("/.netlify/functions/logout", { method: "POST" });
-      window.location.href = "/login.html";
+      try {
+        await fetch("/.netlify/functions/logout", { method: "POST" });
+      } finally {
+        window.location.href = "/login.html";
+      }
     });
   }
 
   if (welcome) {
-    const res = await fetch("/.netlify/functions/me");
-    const data = await res.json();
+    try {
+      const res = await fetch("/.netlify/functions/me");
+      const data = await res.json();
 
-    if (data.success && data.user) {
-      welcome.textContent = `Bienvenido, ${data.user.name}`;
-    } else {
+      if (data.success && data.user) {
+        welcome.textContent = `Bienvenido, ${data.user.name}`;
+      } else {
+        window.location.href = "/login.html";
+      }
+    } catch (error) {
       window.location.href = "/login.html";
     }
   }

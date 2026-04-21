@@ -12,7 +12,25 @@ exports.handler = async (event) => {
     if (!name || !email || !password || !role) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ success: false, message: "Faltan campos obligatorios." })
+        body: JSON.stringify({
+          success: false,
+          message: "Faltan campos obligatorios."
+        })
+      };
+    }
+
+    const existing = await pool.query(
+      `SELECT id FROM users WHERE email = $1`,
+      [email]
+    );
+
+    if (existing.rows.length > 0) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({
+          success: false,
+          message: "Ese correo ya está registrado."
+        })
       };
     }
 
@@ -29,8 +47,13 @@ exports.handler = async (event) => {
 
     await pool.query(
       `INSERT INTO logs (user_id, event_type, description, ip_address, user_agent)
-       VALUES ($1, 'login_failed', $2, $3, $4)`,
-      [null, `Usuario registrado: ${email}`, event.headers["x-nf-client-connection-ip"] || null, event.headers["user-agent"] || null]
+       VALUES ($1, 'register', $2, $3, $4)`,
+      [
+        user.id,
+        `Usuario registrado: ${email}`,
+        event.headers["x-nf-client-connection-ip"] || null,
+        event.headers["user-agent"] || null
+      ]
     );
 
     return {
