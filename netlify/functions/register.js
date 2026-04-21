@@ -7,7 +7,11 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { name, email, password, role } = JSON.parse(event.body);
+    console.log("register start");
+
+    const { name, email, password, role } = JSON.parse(event.body || "{}");
+
+    console.log("body ok", { name: !!name, email: !!email, password: !!password, role: !!role });
 
     if (!name || !email || !password || !role) {
       return {
@@ -19,22 +23,11 @@ exports.handler = async (event) => {
       };
     }
 
-    const existing = await pool.query(
-      `SELECT id FROM users WHERE email = $1`,
-      [email]
-    );
-
-    if (existing.rows.length > 0) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({
-          success: false,
-          message: "Ese correo ya está registrado."
-        })
-      };
-    }
+    const test = await pool.query("SELECT NOW()");
+    console.log("db test ok", test.rows[0]);
 
     const passwordHash = await bcrypt.hash(password, 10);
+    console.log("hash ok");
 
     const userResult = await pool.query(
       `INSERT INTO users (name, email, password_hash, role)
@@ -43,28 +36,18 @@ exports.handler = async (event) => {
       [name, email, passwordHash, role]
     );
 
-    const user = userResult.rows[0];
-
-    await pool.query(
-      `INSERT INTO logs (user_id, event_type, description, ip_address, user_agent)
-       VALUES ($1, 'register', $2, $3, $4)`,
-      [
-        user.id,
-        `Usuario registrado: ${email}`,
-        event.headers["x-nf-client-connection-ip"] || null,
-        event.headers["user-agent"] || null
-      ]
-    );
+    console.log("user insert ok", userResult.rows[0]);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
         message: "Usuario registrado correctamente.",
-        user
+        user: userResult.rows[0]
       })
     };
   } catch (error) {
+    console.error("REGISTER ERROR:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({
