@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("./_db");
-const { getJsonBody, sendJson } = require("./_http");
+const { getClientIp, getJsonBody, sendJson } = require("./_http");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -22,6 +22,8 @@ module.exports = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const clientIp = getClientIp(req);
+    const userAgent = req.headers["user-agent"] || null;
 
     const userResult = await pool.query(
       `INSERT INTO public.users (name, email, password_hash, role)
@@ -33,16 +35,14 @@ module.exports = async (req, res) => {
     const user = userResult.rows[0];
 
     await pool.query(
-      `INSERT INTO public.logs (user_id, event_type, details)
-       VALUES ($1, $2, $3)`,
+      `INSERT INTO public.logs (user_id, event_type, description, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
       [
         user.id,
         "register",
-        JSON.stringify({
-          name,
-          email,
-          role
-        })
+        `Nuevo usuario registrado: ${email} (${role})`,
+        clientIp,
+        userAgent
       ]
     );
 
@@ -64,6 +64,14 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
+
+    if (error.code === "23505") {
+      sendJson(res, 409, {
+        success: false,
+        error: "Ese correo ya está registrado."
+      });
+      return;
+    }
 
     const statusCode = error.message === "Invalid JSON body" ? 400 : 500;
 
