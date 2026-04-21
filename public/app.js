@@ -6,6 +6,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   const message = document.getElementById("message");
   const welcome = document.getElementById("welcome");
 
+  async function readResponseData(res) {
+    const contentType = res.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const data = await res.json();
+      return {
+        data,
+        message: data.message || data.error || (res.ok ? "Respuesta recibida." : `Error ${res.status}`)
+      };
+    }
+
+    const text = await res.text();
+    return {
+      data: {},
+      message: text || (res.ok ? "Respuesta recibida." : `Error ${res.status}`)
+    };
+  }
+
   if (registerForm) {
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -24,11 +42,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           body: JSON.stringify(data)
         });
 
-        const result = await res.json();
-        if (message) message.textContent = result.message || "Respuesta recibida.";
+        const response = await readResponseData(res);
+
+        if (message) message.textContent = response.message;
 
       } catch (error) {
-        if (message) message.textContent = "Error de red al registrar usuario.";
+        if (message) message.textContent = `Error al registrar usuario: ${error.message}`;
       }
     });
   }
@@ -49,8 +68,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           body: JSON.stringify(data)
         });
 
-        const result = await res.json();
-        if (message) message.textContent = result.message || "Respuesta recibida.";
+        const response = await readResponseData(res);
+        const result = response.data;
+
+        if (message) message.textContent = response.message;
 
         if (result.success) {
           if (result.role === "admin") {
